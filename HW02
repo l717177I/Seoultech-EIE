@@ -1,0 +1,181 @@
+import pandas as pd
+import numpy as np
+import torch
+import torch.nn as nn
+import matplotlib.pyplot as plt
+import random
+import torch.nn.functional as F
+
+# from google.colab import drive
+# drive.mount('/gdrive')
+sample = pd.read_csv('/gdrive/My Drive/directory/example.csv', header=None)
+X = np.transpose(np.array(sample))
+
+def sample_fig(X):
+    col = []
+    for i in range(0, len(X[2])):
+        if X[2, i] == 1:
+            col.append('r')
+        elif X[2, i] == 0:
+            col.append('b')
+    plt.title('Practice 2.(1)')
+    plt.scatter(X[0], X[1], c=col, s=20, linewidth=0)
+    plt.show()
+
+
+def partial_diff(f, x):  # 편미분 정의
+
+    h = 0.0001
+
+    grad = np.zeros_like(x)
+    print(x.shape)
+    for idx in range(x.size):
+        tmp_val = x[idx]
+
+        x[idx] = np.float(tmp_val) + h
+        fxh1 = f(x)
+
+        x[idx] = np.float(tmp_val) - h
+        fxh2 = f(x)
+
+        x[idx] = tmp_val
+
+    grad = (f(x + h) - f(x - h)) / (2 * h)
+
+    return grad
+
+def sigmoid(x):
+    y = torch.from_numpy(x)
+    y = F.sigmoid(y)
+    y = y.numpy()
+    return y
+
+def lossF(y, t):
+    y = torch.from_numpy(y)
+    t = torch.from_numpy(t)
+    result = nn.CrossEntropyLoss(y, t)
+    result = result.numpy()
+    return result
+
+def gradient_descent(f, init_x, lr=0.01, step_num=200):
+    x = init_x
+    # x_history = []
+    for i in range(step_num):
+        grad = partial_diff(f, x)
+        x -= lr * grad
+
+    return x
+
+
+class Net:
+
+    def __init__(self, input_size, output_size, weight_init_std=0.01):
+        self.params = {}
+        self.params['W'] = weight_init_std * np.random.randn(input_size, output_size)
+        self.params['b'] = np.zeros(output_size)
+
+        print("__init__, W.shape :", self.params['W'].shape)
+        print("__init__, b.shape :", self.params['b'].shape)
+
+    def predict(self, x):
+        W = self.params['W']
+        b = self.params['b']
+
+        a = np.dot(x, W) + b
+        y = sigmoid(a)
+
+        return y
+
+    def accuracy(self, x, t):
+        y = self.predict(x)
+        y = np.argmax(y, axis=1)
+        t = np.argmax(t, axis=1)
+
+        accuracy = np.sum(y == t) / float(x.shape[0])
+
+        return accuracy
+
+    def loss(self, x, t):
+        print("loss)x.shape :", x.shape)
+        print("loss)t.shape :", t.shape)
+        y = self.predict(x)
+        return lossF(y, t)
+
+    def gradient_descent(self, x, t, lr=0.01, step_num=200):
+        # x_history = []
+        # np.random.randn(1)
+        f = self.loss(x, t)
+        for i in range(step_num):
+            grad = partial_diff(f, x)
+            x -= lr * grad
+
+        return f(x, t)
+
+def load_data():
+    tmp = X
+    train_data = np.zeros((2, 90), dtype=float)
+    train_lbs = np.zeros(90, dtype=float)
+    test_data = np.zeros((2, 10), dtype=float)
+    test_lbs = np.zeros(10, dtype=float)
+
+    for i in range(90):
+        if i < 45:
+            train_data[0, i] = tmp[0, i]
+            train_data[1, i] = tmp[1, i]
+            train_lbs[i] = tmp[2, i]
+        else:
+            train_data[0, i] = tmp[0, 5 + i]
+            train_data[1, i] = tmp[1, 5 + i]
+            train_lbs[i] = tmp[2, 5 + i]
+
+    for i in range(10):
+        if i < 5:
+            test_data[0, i] = tmp[0, i + 45]
+            test_data[1, i] = tmp[1, i + 45]
+            test_lbs[i] = tmp[2, i + 45]
+        else:
+            test_data[0, i] = tmp[0, i + 90]
+            test_data[1, i] = tmp[1, i + 90]
+            test_lbs[i] = tmp[2, i + 90]
+
+    train_data = train_data.reshape(-1, 2)
+    test_data = test_data.reshape(-1, 2)
+    train_lbs = train_lbs.reshape(-1, 1)
+    test_lbs = test_lbs.reshape(-1, 1)
+
+    return train_data, test_data, train_lbs, test_lbs
+
+def Hw2_main():
+    network = Net(input_size=2, output_size=2)
+    train_data, test_data, train_lbs, test_lbs = load_data()
+
+    numof_iters = 500
+    train_size = train_data.shape[0]
+    learning_rate = 0.1
+
+    train_loss_list = []
+    train_acc_list = []
+    test_acc_list = []
+
+    iter_per_epoch = 5
+    epoch = 0
+
+    # x_tmp = train_data.reshape(-1,)
+    # t_tmp = train_lbs.reshape(-1,)
+
+    for i in range(numof_iters):
+        grad = network.gradient_descent(train_data, train_lbs)
+
+        loss = network.loss(train_data, train_lbs)
+        train_loss_list.append(loss)
+
+        train_acc = network.accuracy(train_data, train_lbs)
+        test_acc = network.accuracy(test_data, test_lbs)
+        train_acc_list.append(train_acc)
+        test_acc_list.append(test_acc)
+        print("Epoch", iter_per_epoch, ": train acc, test acc | " + str(train_acc) + ", " + str(test_acc))
+        epoch += 1
+        
+        
+if __name__ == '__main__':
+    Hw2_main()
