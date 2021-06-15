@@ -1,0 +1,88 @@
+# 2020-1 DL Assignment-2
+# from google.colab import drive
+# drive.mount('/gdrive')
+
+import torch
+import numpy as np
+import random # random seed
+from torchvision import datasets, transforms
+from torch.utils.data import DataLoader
+
+# for reproducibility
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+random.seed(777)
+torch.manual_seed(777)
+
+if device == 'cuda':
+    torch.cuda.manual_seed_all(777)
+
+
+class NearestNeighbor():
+    def __init__(self):
+        pass
+
+    def train(self, X, Y):
+        # X is N * D where each row is an example.
+        # Y is 1-dimension of size N
+        # the nearest neighborclassifier simply remembers all the training data
+
+        self.Xtr = X
+        self.Ytr = Y
+        print('Complete!')  # print 'Complete!' per 50000/batch.
+        # print(torch.argmax(self.Ytr))
+
+    def predict(self, X):
+        # find the nearest training image to the i'th test image
+        # using the L1 distance (sum of absolute value differences)
+        # and using the L2 distance (sum of squares of value differences)
+
+        num = X.shape[0]  # X.shape = 50000X32X32X3, num = 50000
+        Ypred = torch.zeros(num, dtype=self.Ytr.dtype)  # 거리가 최소가 되는 점들(=유사도가 높은)을 기록할 zero-matrix
+
+        for i in range(num):
+            distances = torch.sum(torch.abs(self.Xtr - X[i, :]), axis=1)  # 거리 계산 결과
+            # 위의 식 대신 대신 torch.sqrt(torch.sum(torch.square(self.Xtr - X[i,:]), axis = 1))
+            min_idx = torch.argmin(distances)  # 계산 결과 중 최솟값 위치 index
+            Ypred[i] = self.Ytr[min_idx]
+
+        return Ypred  # 결과값 Return
+
+
+def CIFAR10_DatasetLoad():
+    Root = '/gdrive/My Drive/data'
+    transformer = transforms.Compose([transforms.Resize((32, 32)),
+                                      transforms.ToTensor(),
+                                      transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+    # Dataset Upload
+    train_dataset = datasets.CIFAR10(root=Root, train=True, download=True, transform=transformer)
+    test_dataset = datasets.CIFAR10(root=Root, train=False, download=True, transform=transformer)
+    # Data Loader
+    train_loader = DataLoader(dataset=train_dataset, batch_size=10000, shuffle=True, drop_last=True, num_workers=2)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=10000, shuffle=False, num_workers=2)
+
+    return train_loader, test_loader    # 생략 가능
+
+
+def Knn_main():
+    nn = NearestNeighbor()
+    trainloader,testloader = CIFAR10_DatasetLoad()
+
+    # nn에서 training dataset 학습
+    for X, Y in trainloader:
+        X_tr = X.view(-1, 32 * 32 * 3).to(device)  # train images
+        Y_tr = Y.to(device)  # train labels
+        nn.train(X_tr, Y_tr)
+
+    # Test
+    for X, Y in testloader:
+        X_te = X.view(-1, 32 * 32 * 3).to(device)  # test에 사용할 images
+        Y_te = Y.to(device)  # test label. K-NN의 accuracy 계산용
+        Y_predict = nn.predict(X_te)
+        
+    # K-nn Test
+    Y_t = torch.Tensor.numpy(torch.Tensor.cpu(Y_te))
+    Y_p = torch.Tensor.numpy(Y_predict)
+    print("Accuracy(%)", ': %.3f' % ((np.mean(Y_p == Y_t)) * 100))
+    
+if __name__ == '__main__':
+    Knn_main()
