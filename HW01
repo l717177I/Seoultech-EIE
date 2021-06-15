@@ -1,0 +1,125 @@
+import numpy as np
+import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+### Prob.1
+def generatePrime(maxVal):
+    Arr = [2]
+    if maxVal <= 1:
+        print("2 이상의 숫자를 입력하세요")
+    else:
+        R = np.array(range(maxVal))
+        for i in R[3:]:
+            for j in R[2:]:
+                if i % j == 0: break
+            if i == j:
+                Arr = np.append(Arr, j)
+            print("Prime numbers are", Arr)
+
+def Prob1_main():
+    x = input("Enter a range :")
+    x = int(x)
+    generatePrime(x)
+    print('###Prob.1 End###')
+
+### Prob.2
+def plot_line(x, y, b):
+    print("Coefficients: nb_0 =", b[0], "nb_1 =", b[1])
+    f = b[0] + b[1] * x
+    # plt.plot(x, y)
+    plt.plot(x, y, 'o')  # 'o' : 그래프 모양(점)
+    plt.plot(x, f)
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.legend(['y', 'f(x)'])
+    plt.show()
+
+def Prob2_main():
+    x = np.array(range(10))
+    y = np.array([1, 3, 2, 5, 7, 8, 8, 9, 10, 12])
+    b = np.array([0.0, 0.0])
+    print("x :", x)
+
+    while (True):
+        b[0] = input("What is the value of b_0? ")
+        b[1] = input("What is the value of b_1? ")
+
+        plot_line(x, y, b)
+        Ans = input("Continue? ")
+        if (Ans == 'Y') or (Ans == 'y'): continue
+        break
+        
+    print('###Prob.2 End###')
+
+### Prob.3
+def _torchseed():
+    torch.manual_seed(1)  # Sets the seed for generating random numbers. Returns a torch.Generator object.
+
+def create_dataset():
+    x_train = torch.FloatTensor([range(10)])
+    x_train = x_train.reshape(-1, 1)
+    y_train = torch.FloatTensor([1, 3, 2, 5, 7, 8, 8, 9, 10, 12])
+    y_train = y_train.reshape(-1, 1)
+
+    model = nn.Linear(1, 1)
+    # Linear :: 입,출력 데이터의 차원을 변수로 받는 함수. forward 연산을 수행한다!
+    # b0(Weight)와 b1(Bias)가 저장되어져있음
+    # x, y 는 1:1 대응이므로 입,출력 차원 모두 1
+    print(list(model.parameters()))
+    # 출력되었을때 첫번째 값이 Weight(= model.weight), 두번째 값이 Bias(=model.bias)
+    # 랜덤값으로 초기화 되어있는 상태
+    # 두 값 모두 learning target ->> requires_grad = True
+
+    return x_train, y_train, model
+
+def optSGD(model):
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.01)
+    return optimizer
+
+def draw_plot(x, y, b0, b1):
+    b0 = float(b0)  # Weight
+    b1 = float(b1)  # Bias
+    plt.plot(x, y, 'o')  # 'o' : 그래프 모양(점)
+    plt.plot(x, b0 * x + b1)
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.legend(['Original data', 'fitted line'])
+    plt.show()
+    print('b0 is {:.3f}, b1 is {:.3f}'.format(b0, b1))
+    print('line :', 'y = {:.3f}x + {:.3f}'.format(b0, b1))
+
+def Prob3_main():
+    x_train, y_train, model = create_dataset()
+    optimizer = optSGD(model)
+    epochs = 1000
+    for epoch in range(epochs + 1):
+
+        # H(x) 계산
+        prediction = model(x_train)
+
+        # cost 계산
+        cost = F.mse_loss(prediction, y_train)
+        # mse_loss::파이토치에서 제공하는 평균 제곱 오차 함수;MSE(mean square error)
+
+        # cost로 H(x) 개선하는 부분
+
+        optimizer.zero_grad()  # gradient = 0으로 초기화
+        cost.backward()  # Backward 연산, cost function 미분하여 gradient 계산
+        optimizer.step()  # W와 b를 업데이트
+
+        if epoch % 100 == 0:  # 100번마다 로그 출력
+            print('Epoch {:4d}/{} : Cost = {:.6f}  b0 = {:.8f}, b1 = {:.8f} '.format(
+                epoch, epochs, cost.item(), float(model.weight), float(model.bias)))
+
+    print('###Prob.3 End###')
+    
+
+def HW01_main():
+    Prob1_main()
+    Prob2_main()
+    Prob3_main()
+    
+if __name__ == '__main__':
+    HW01_main()
