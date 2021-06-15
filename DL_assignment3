@@ -1,0 +1,80 @@
+import numpy as np
+
+class neural(object):
+  def __init__(self):
+    pass
+    
+  def activationFunc(self, n):      # activation function g(x) = cx
+    self.g = 2.0*n
+    return self.g
+
+  def AND(self, x1, x2):
+    self.X = np.array([1.0, x1, x2])      # input; [x0, x1, x2]
+    self.W1 = np.array([-8.0, 5.0, 5.0])
+    self.z = self.W1*self.X                 
+    self.tmp = np.sum(self.z)
+    self.G = self.activationFunc(self.tmp)
+    if self.G > 0 : return 1
+    else : return 0
+
+  def NAND(self, x1, x2):
+    self.X = np.array([1.0, x1, x2])      # input; [x0, x1, x2]
+    self.W1 = np.array([-8.0, 5.0, 5.0])
+    self.z = self.W1*self.X                 
+    self.tmp = np.sum(self.z)
+    self.G = self.activationFunc(self.tmp)
+    if self.G < 0 : return 1
+    else : return 0
+
+  def OR(self, x1, x2):
+    self.X = np.array([1.0, x1, x2])      # input; [x0, x1, x2]
+    self.W2 = np.array([-3.0, 5.0, 5.0])
+    self.z = self.W2*self.X                 
+    self.tmp = np.sum(self.z)
+    self.G = self.activationFunc(self.tmp)
+    if self.G > 0 : return 1
+    else : return 0
+
+  def NOR(self, x1, x2):
+    self.X = np.array([1.0, x1, x2])      # input; [x0, x1, x2]
+    self.W2 = np.array([-3.0, 5.0, 5.0])
+    self.z = self.W2*self.X                 
+    self.tmp = np.sum(self.z)
+    self.G = self.activationFunc(self.tmp)
+    if self.G < 0 : return 1
+    else : return 0
+
+class gate(neural):
+  def __init__(self):
+    pass
+
+# 논리식을 활용한 XOR, NXOR gate 구현
+
+  def XOR(self, x1, x2):
+    self.n1 = super().NAND(x1, x2)
+    self.n2 = super().OR(x1, x2)
+    self.y = super().AND(self.n1, self.n2)
+    return self.y
+
+  def NXOR(self, x1, x2):
+    self.n1 = super().NAND(x1, x2)
+    self.n2 = super().OR(x1, x2)
+    self.y = super().NAND(self.n1, self.n2)
+    return self.y
+    
+# main
+
+if __name__ == "__main__":
+  m1 = gate()
+  m2 = gate()
+  print('** XOR Gate **')
+  print('1) x1 = 1, x2 = 1  ::', m1.XOR(1,1))
+  print('2) x1 = 1, x2 = 0  ::', m1.XOR(1,0))
+  print('3) x1 = 0, x2 = 1  ::', m1.XOR(0,1))
+  print('4) x1 = 0, x2 = 0  ::', m1.XOR(0,0))
+
+  print('\n\n** NXOR Gate **')
+  print('1) x1 = 1, x2 = 1  ::', m2.NXOR(1,1))
+  print('2) x1 = 1, x2 = 0  ::', m2.NXOR(1,0))
+  print('3) x1 = 0, x2 = 1  ::', m2.NXOR(0,1))
+  print('4) x1 = 0, x2 = 0  ::', m2.NXOR(0,0))
